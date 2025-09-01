@@ -1,9 +1,17 @@
 const express = require('express')
 const path = require('path')
 const fs = require('fs')
+const cors = require('cors')
 
 const app = express()
 const PORT = 3000
+
+app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: false
+}))
 
 function loadTariffs() {
     const file = path.join(__dirname, 'data/tariffs.json')
@@ -24,5 +32,5 @@ app.get('/api/tariffs/:id', (req, res) => {
 })
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`)
+    console.log(`Server running at http://localhost:${PORT}`)
 })
