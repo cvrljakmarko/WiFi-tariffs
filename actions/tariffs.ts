@@ -1,4 +1,3 @@
-// src/actions/tariffs.ts
 import client from '../api/client'
 import type { Tariff } from '../types/tariffs'
 

@@ -1,41 +1,33 @@
 [
-  {
-    "id": "basic-plan",
-    "name": "Basic",
-    "features": {
-      "bandwidth": "100 GB",
-      "online_duration": "30 days",
-      "support": "Email only"
-    },
-    "prices": {
-      "monthly": {
-        "currency": "EUR",
-        "amount": 9.99
-      },
-      "yearly": {
-        "currency": "EUR",
-        "amount": 99.99
-      }
-    }
-  },
-  {
-    "id": "pro-plan",
-    "name": "Pro",
-    "features": {
-      "bandwidth": "1 TB",
-      "online_duration": "Unlimited",
-      "support": "24/7 Chat & Email",
-      "custom_domain": true
-    },
-    "prices": {
-      "monthly": {
-        "currency": "EUR",
-        "amount": 29.99
-      },
-      "yearly": {
-        "currency": "EUR",
-        "amount": 299.99
-      }
-    }
-  }
+  { "id": "basic-plan", "name": "Basic", "price": 9.99 },
+  { "id": "pro-plan", "name": "Pro", "price": 19.99 },
+  { "id": "starter-plan", "name": "Starter", "price": 5.99 },
+  { "id": "advanced-plan", "name": "Advanced", "price": 24.99 },
+  { "id": "premium-plan", "name": "Premium", "price": 29.99 },
+  { "id": "business-plan", "name": "Business", "price": 49.99 },
+  { "id": "enterprise-plan", "name": "Enterprise", "price": 99.99 },
+  { "id": "student-plan", "name": "Student", "price": 4.99 },
+  { "id": "family-plan", "name": "Family", "price": 14.99 },
+  { "id": "team-plan", "name": "Team", "price": 39.99 },
+  { "id": "developer-plan", "name": "Developer", "price": 11.99 },
+  { "id": "designer-plan", "name": "Designer", "price": 12.99 },
+  { "id": "ultimate-plan", "name": "Ultimate", "price": 59.99 },
+  { "id": "vip-plan", "name": "VIP", "price": 79.99 },
+  { "id": "gold-plan", "name": "Gold", "price": 44.99 },
+  { "id": "silver-plan", "name": "Silver", "price": 22.99 },
+  { "id": "bronze-plan", "name": "Bronze", "price": 15.99 },
+  { "id": "cloud-plan", "name": "Cloud", "price": 18.99 },
+  { "id": "storage-plan", "name": "Storage", "price": 7.49 },
+  { "id": "backup-plan", "name": "Backup", "price": 6.99 },
+  { "id": "analytics-plan", "name": "Analytics", "price": 27.99 },
+  { "id": "marketing-plan", "name": "Marketing", "price": 33.99 },
+  { "id": "seo-plan", "name": "SEO", "price": 12.49 },
+  { "id": "content-plan", "name": "Content", "price": 16.49 },
+  { "id": "growth-plan", "name": "Growth", "price": 21.99 },
+  { "id": "scale-plan", "name": "Scale", "price": 41.99 },
+  { "id": "plus-plan", "name": "Plus", "price": 8.99 },
+  { "id": "starter-plus-plan", "name": "Starter Plus", "price": 10.99 },
+  { "id": "community-plan", "name": "Community", "price": 3.99 },
+  { "id": "elite-plan", "name": "Elite", "price": 89.99 }
 ]
+
