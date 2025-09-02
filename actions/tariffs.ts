@@ -16,3 +16,8 @@ export async function fetchTariff(id: string): Promise<Tariff> {
     }
     return data
 }
+
+export async function createTariff(payload: Pick<Tariff, 'name' | 'price'>): Promise<Tariff> {
+    const { data } = await client.post<Tariff>('/tariffs', payload)
+    return data
+}

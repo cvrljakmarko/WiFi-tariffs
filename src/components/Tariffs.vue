@@ -1,30 +1,37 @@
 <template>
-    <header class="tariffs-header">
-        <h1>Tariffs</h1>
-        <p>Welcome to WiFi Tariffs</p>
-        <p v-if="error" class="error">{{ error }}</p>
-        <p v-else-if="tariffs.length === 0">No tariffs found</p>
-    </header>
+    <div class="tariffs-wrapper">
+        <header class="tariffs-header">
+            <h1>Tariffs</h1>
+            <p>Welcome to WiFi Tariffs</p>
+        </header>
 
-    <!-- Custom search UI -->
-    <div class="search-bar">
-        <input type="text" v-model="searchId" placeholder="Search by ID (e.g. basic-plan)" @keyup.enter="searchById" />
-        <button @click="searchById">Search</button>
-        <button class="reset" @click="reset">Reset</button>
+        <!-- Custom search UI -->
+        <div class="search-bar">
+            <input type="text" v-model="searchName" placeholder="Search by Name (e.g. Basic)"
+                @keyup.enter="applySearch" />
+        </div>
+
+        <!-- Vuetify table -->
+        <v-data-table :headers="headers" :items="filteredTariffs" :items-per-page="5" class="tariffs-table" />
+
+        <!-- Button centered below table -->
+        <div class="actions">
+            <v-btn variant="outlined" @click="createTariffInMemory">
+                Create
+            </v-btn>
+        </div>
     </div>
-
-    <!-- Keep Vuetify table to benefit from pagination -->
-    <v-data-table :headers="headers" :items="tariffs" :items-per-page="5" class="tariffs-table" />
 </template>
 
+
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { fetchTariffs, fetchTariff } from '../../actions/tariffs'
+import { ref, onMounted, computed } from 'vue'
+import { createTariff, fetchTariffs } from '../../actions/tariffs'
 import type { Tariff } from '../../types/tariffs'
 
 const tariffs = ref<Tariff[]>([])
 const error = ref<string | null>(null)
-const searchId = ref('')
+const searchName = ref('')
 
 const headers = [
     { title: 'ID', key: 'id' },
@@ -32,7 +39,7 @@ const headers = [
     { title: 'Price', key: 'price' }
 ]
 
-async function loadAll() {
+onMounted(async () => {
     try {
         error.value = null
         tariffs.value = await fetchTariffs()
@@ -40,33 +47,46 @@ async function loadAll() {
         error.value = e?.message ?? 'Failed to load tariffs'
         tariffs.value = []
     }
-}
+})
 
-async function searchById() {
-    if (!searchId.value.trim()) return loadAll()
+const filteredTariffs = computed(() => {
+    const q = searchName.value.trim().toLowerCase()
+    if (!q) return tariffs.value
+    return tariffs.value.filter(t => t.name?.toLowerCase().includes(q))
+})
+
+async function createTariffInMemory() {
     try {
-        error.value = null
-        const t = await fetchTariff(searchId.value.trim())
-        tariffs.value = [t]
+        const created = await createTariff({ name: 'New Plan', price: 0 })
+        // Append directly so the new row shows without reloading everything
+        tariffs.value = [...tariffs.value, created]
     } catch (e: any) {
-        error.value = e?.message ?? 'Tariff not found'
-        tariffs.value = []
+        error.value = e?.message ?? 'Something went wrong. Please try again.'
     }
 }
 
 function reset() {
-    searchId.value = ''
-    loadAll()
+    searchName.value = ''
 }
-
-onMounted(loadAll)
 </script>
 
 <style lang="scss" scoped>
-/* Layout & header */
+.tariffs-wrapper {
+    max-width: 960px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+/* Header */
 .tariffs-header {
     text-align: center;
-    margin-bottom: 1.25rem;
 
     h1 {
         margin: 0;
@@ -85,61 +105,32 @@ onMounted(loadAll)
     }
 }
 
-/* Custom search UI (no Vuetify) */
+/* Search */
 .search-bar {
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: .5rem;
-    flex-wrap: wrap;
-    margin: 0 auto 1rem;
-    max-width: 720px;
+    width: 100%;
 
     input {
-        flex: 1 1 280px;
-        max-width: 420px;
-        padding: .6rem .8rem;
+        flex: 1;
+        max-width: 400px;
+        padding: 0.6rem 0.8rem;
         border: 1px solid #dcdcdc;
         border-radius: 6px;
-        font-size: .95rem;
+        font-size: 0.95rem;
         outline: none;
 
         &:focus {
             border-color: #3498db;
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, .12);
-        }
-    }
-
-    button {
-        padding: .55rem .9rem;
-        border: none;
-        border-radius: 6px;
-        background: #3498db;
-        color: #fff;
-        font-weight: 700;
-        cursor: pointer;
-        transition: background .15s ease;
-
-        &:hover {
-            background: #2d86c2;
-        }
-
-        &.reset {
-            background: #95a5a6;
-
-            &:hover {
-                background: #7f8c8d;
-            }
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.12);
         }
     }
 }
 
-/* Make Vuetify table visually match our custom style without replacing pagination */
+/* Table */
 .tariffs-table {
-    max-width: 900px;
-    margin: 0 auto;
+    width: 100%;
 
-    /* Header row */
     :deep(thead th) {
         background: #f7f8fa;
         color: #2c3e50;
@@ -147,23 +138,27 @@ onMounted(loadAll)
         border-bottom: 1px solid #e6e6e6;
     }
 
-    /* Cells */
     :deep(tbody td) {
         border-bottom: 1px solid #efefef;
         color: #333;
-        font-size: .95rem;
+        font-size: 0.95rem;
     }
 
-    /* Zebra rows */
     :deep(tbody tr:nth-child(even)) {
         background: #fbfbfb;
     }
 
-    /* Optional: round table corners (wrapper) */
     :deep(.v-table) {
         border: 1px solid #e8e8e8;
         border-radius: 10px;
         overflow: hidden;
     }
+}
+
+/* Actions */
+.actions {
+    display: flex;
+    justify-content: center;
+    width: 100%;
 }
 </style>
