@@ -6,12 +6,10 @@ const client = axios.create({
 })
 
 client.interceptors.response.use(
-    (response: AxiosResponse) => {
-        return response;
-    },
-    async (error: AxiosError) => {
-        const msg = error.message || 'Request failed'
-        return Promise.reject(new Error(msg))
+    (response: AxiosResponse) => response,
+    (error: AxiosError) => {
+        console.error('Error:', error.message)
+        return Promise.reject(new Error('Something went wrong. Please try again.'))
     }
 )
 
