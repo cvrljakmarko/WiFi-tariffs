@@ -22,7 +22,8 @@
         </div>
 
         <!-- Table -->
-        <v-data-table :headers="headers" :items="filteredTariffs ?? []" :items-per-page="5" class="tariffs-table" />
+        <v-data-table show-select :headers="headers" :items="filteredTariffs ?? []" :items-per-page="5"
+            class="tariffs-table" />
 
         <!-- Actions -->
         <div class="actions">
@@ -249,6 +250,10 @@ async function handleCreate() {
 /* Table */
 .tariffs-table {
     width: 100%;
+
+    :deep(.v-selection-control__input input) {
+        opacity: unset;
+    }
 
     :deep(thead th) {
         background: #f7f8fa;
