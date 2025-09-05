@@ -66,6 +66,43 @@ app.post('/api/tariffs', (req, res) => {
     res.status(201).json(newTariff)
 })
 
+app.put('/api/tariffs/:id', (req, res) => {
+    const id = String(req.params.id)
+    const { name, price } = req.body || {}
+    if (!name || typeof price !== 'number') {
+        return res.status(400).json({ error: 'name and numeric price are required' })
+    }
+    const i = tariffs.findIndex(t => String(t.id) === id)
+    if (i === -1) return res.status(404).json({ error: 'Tariff not found' })
+    tariffs[i] = { ...tariffs[i], name: String(name).trim(), price: Number(price) }
+    return res.json(tariffs[i])
+})
+
+app.patch('/api/tariffs/:id', (req, res) => {
+    const id = String(req.params.id)
+    const i = tariffs.findIndex(t => String(t.id) === id)
+    if (i === -1) return res.status(404).json({ error: 'Tariff not found' })
+    const next = { ...tariffs[i] }
+    if (typeof req.body?.name === 'string') next.name = req.body.name.trim()
+    if (typeof req.body?.price === 'number') next.price = req.body.price
+    tariffs[i] = next
+    return res.json(tariffs[i])
+})
+
+app.delete('/api/tariffs/:id', (req, res) => {
+    const id = String(req.params.id)
+    const i = tariffs.findIndex(t => String(t.id) === id)
+    if (i === -1) return res.status(404).json({ error: 'Tariff not found' })
+
+    tariffs.splice(i, 1)
+
+    // If you want simple persistence later:
+    // fs.writeFileSync(path.join(__dirname, 'data/tariffs.json'), JSON.stringify(tariffs, null, 2))
+
+    return res.status(204).send()
+})
+
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`)
 })

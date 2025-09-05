@@ -3,27 +3,49 @@
         <header class="tariffs-header">
             <h1>Tariffs</h1>
             <p>Welcome to WiFi Tariffs</p>
-
-            <!-- Server error banner -->
-            <div v-if="error" class="error-banner">
-                {{ error }}
-                <button class="retry" @click="reload">Retry</button>
-            </div>
-
-            <!-- Success banner -->
             <div v-if="success" class="success-banner">
                 {{ success }}
             </div>
         </header>
-
-        <!-- Search -->
         <div class="search-bar">
             <input type="text" v-model="searchName" placeholder="Search by Name (e.g. Basic)" />
         </div>
 
         <!-- Table -->
-        <v-data-table show-select :headers="headers" :items="filteredTariffs ?? []" :items-per-page="5"
-            class="tariffs-table" />
+        <v-data-table :headers="headers" :items="filteredTariffs" item-value="id" show-select v-model="selectedIds"
+            return-object select-strategy="all" :items-per-page="5" class="tariffs-table">
+            <!-- Actions cell -->
+            <template #item.actions="{ item }">
+                <v-btn size="small" variant="text" @click="openEdit(item)">Edit</v-btn>
+                <v-btn size="small" variant="text" color="error" @click="handleDelete(item)">Delete</v-btn>
+
+            </template>
+        </v-data-table>
+
+        <!-- Edit Tariff Modal -->
+        <v-dialog v-model="editDialog" max-width="420">
+            <v-card>
+                <v-card-title>Edit Tariff ({{ editForm.id }})</v-card-title>
+                <v-card-text>
+                    <v-text-field v-model.trim="editForm.name" label="Name" variant="outlined"
+                        :error="editShowErrors && !!editNameError" />
+                    <p v-if="editShowErrors && editNameError" class="field-error">{{ editNameError }}</p>
+
+                    <v-text-field v-model.number="editForm.price" label="Price (€)" type="number" variant="outlined"
+                        :error="editShowErrors && !!editPriceError" step="0.01" min="0" inputmode="decimal" />
+                    <p v-if="editShowErrors && editPriceError" class="field-error">{{ editPriceError }}</p>
+                </v-card-text>
+                <v-card-actions class="justify-end">
+                    <v-btn :disabled="editSaving" text @click="closeEdit">Cancel</v-btn>
+                    <v-btn color="primary" :loading="editSaving" @click="handleEditSave">Save</v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-dialog>
+
+        <!-- New button to collect selected IDs -->
+        <v-btn class="ml-4" color="secondary" variant="flat" @click="collectSelected">
+            Collect Selected
+        </v-btn>
 
         <!-- Actions -->
         <div class="actions">
@@ -40,9 +62,9 @@
                 <v-card-text>
                     <!-- Name -->
                     <v-text-field v-model.trim="newTariff.name" label="Name" variant="outlined"
-                        :error="showErrors && !!nameError" />
-                    <p v-if="showErrors && nameError" class="field-error">
-                        {{ nameError }}
+                        :error="showErrors && !!editNameError" />
+                    <p v-if="showErrors && editNameError" class="field-error">
+                        {{ editNameError }}
                     </p>
 
                     <!-- Price -->
@@ -65,8 +87,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { createTariff, fetchTariffs } from '../../actions/tariffs'
+import { ref, onMounted, computed, watch } from 'vue'
+import { createTariff, deleteTariff, fetchTariffs, updateTariff } from '../../actions/tariffs'
 import type { Tariff } from '../../types/tariffs'
 
 const tariffs = ref<Tariff[] | null>([])
@@ -74,20 +96,70 @@ const error = ref<string | null>(null)
 const searchName = ref('')
 const loading = ref(false)
 const success = ref<string | null>(null)
+const selectedIds = ref<string[]>([])
+
+function collectSelected() {
+    console.log('SelectedIds ref content:', selectedIds.value)
+    if (selectedIds.value.length === 0) {
+        console.log('No items selected')
+        return
+    }
+    console.log('Collected IDs:', selectedIds.value[0])
+    success.value = `Collected ${selectedIds.value.length} ID(s): ${selectedIds.value.join(', ')}`
+    setTimeout(() => (success.value = null), 3000)
+}
 
 const headers = [
     { title: 'ID', key: 'id' },
     { title: 'Name', key: 'name' },
-    { title: 'Price', key: 'price' }
+    { title: 'Price', key: 'price' },
+    { title: 'Actions', key: 'actions', sortable: false }
 ]
+
+async function handleDelete(row: Tariff) {
+    const id = String(row.id)
+    const ok = window.confirm(`Delete tariff "${row.name}" (ID ${id})?`)
+    if (!ok) return
+
+    try {
+        await deleteTariff(id)
+        // remove locally
+        tariffs.value = (tariffs.value ?? []).filter(t => String(t.id) !== id)
+        success.value = `Tariff "${row.name}" deleted.`
+        setTimeout(() => (success.value = null), 3000)
+    } catch (e: any) {
+        error.value = e?.message ?? 'Failed to delete. Please try again.'
+    }
+}
+
+// ---- Edit dialog state ----
+const editDialog = ref(false)
+const editSaving = ref(false)
+const editShowErrors = ref(false)
+const editForm = ref<{ id: string; name: string; price: number | null }>({
+    id: '',
+    name: '',
+    price: null
+})
+
+function openEdit(row: Tariff) {
+    editForm.value = {
+        id: String(row.id),
+        name: row.name,
+        price: row.price
+    }
+    editShowErrors.value = false
+    editDialog.value = true
+}
+function closeEdit() { editDialog.value = false }
 
 async function reload() {
     loading.value = true
     try {
         error.value = null
         tariffs.value = await fetchTariffs()
-    } catch (e: any) {
-        error.value = e?.message ?? 'Something went wrong. Please try again.'
+    } catch (err: any) {
+        error.value = err?.message ?? 'Something went wrong. Please try again.'
         tariffs.value = []
     } finally {
         loading.value = false
@@ -96,10 +168,10 @@ async function reload() {
 
 onMounted(reload)
 
-const filteredTariffs = computed(() => {
+const filteredTariffs = computed<Tariff[]>(() => {
+    const all = tariffs.value ?? []
     const q = searchName.value.trim().toLowerCase()
-    if (!q) return tariffs.value
-    return tariffs.value ? tariffs.value.filter(t => t.name?.toLowerCase().includes(q)) : null;
+    return q ? all.filter(t => t.name?.toLowerCase().includes(q)) : all
 })
 
 /** ---------- Modal / Create ---------- **/
@@ -120,8 +192,8 @@ function closeDialog() {
 /** Validation rules */
 const NAME_REGEX = /^[\p{L}\p{N}\s\-\.+]{2,50}$/u
 
-const nameError = computed(() => {
-    const v = newTariff.value.name?.trim() ?? ''
+const editNameError = computed(() => {
+    const v = editForm.value.name?.trim() ?? ''
     if (!v) return 'Name is required.'
     if (v.length < 2) return 'Name must be at least 2 characters.'
     if (v.length > 50) return 'Name must be at most 50 characters.'
@@ -138,11 +210,49 @@ const priceError = computed(() => {
     return ''
 })
 
-const formValid = computed(() => !nameError.value && !priceError.value)
+const editPriceError = computed(() => {
+    const p = editForm.value.price
+    if (p === null || p === undefined || Number.isNaN(p)) return 'Price is required.'
+    if (p <= 0) return 'Price must be greater than 0.'
+    const decimalsOk = Number.isInteger(p * 100)
+    if (!decimalsOk) return 'Price can have up to 2 decimals.'
+    return ''
+})
+
+const editFormValid = computed(() => !editNameError.value && !editPriceError.value)
+
+async function handleEditSave() {
+    editShowErrors.value = true
+    if (!editFormValid.value) return
+
+    editSaving.value = true
+    try {
+        const id = editForm.value.id
+        const payload = {
+            name: editForm.value.name.trim(),
+            price: Number(editForm.value.price)
+        }
+        const updated = await updateTariff(id, payload)
+
+        // update the row in-place in the current list
+        tariffs.value = (tariffs.value ?? []).map(t =>
+            String(t.id) === String(updated.id) ? updated : t
+        )
+
+        success.value = `Tariff "${updated.name}" updated successfully!`
+        error.value = null
+        closeEdit()
+        setTimeout(() => (success.value = null), 3000)
+    } catch (e: any) {
+        error.value = e?.message ?? 'Something went wrong. Please try again.'
+    } finally {
+        editSaving.value = false
+    }
+}
 
 async function handleCreate() {
     showErrors.value = true
-    if (!formValid.value) return
+    if (!editFormValid.value) return
 
     saving.value = true
     try {

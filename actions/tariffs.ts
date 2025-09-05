@@ -26,3 +26,15 @@ export async function createTariff(payload: Pick<Tariff, 'name' | 'price'>): Pro
     const { data } = await client.post<Tariff>('/tariffs', payload)
     return data
 }
+
+export async function updateTariff(
+    id: string,
+    payload: Partial<Pick<Tariff, 'name' | 'price'>>
+): Promise<Tariff> {
+    const { data } = await client.patch<Tariff>(`/tariffs/${id}`, payload)
+    return data
+}
+
+export async function deleteTariff(id: string): Promise<void> {
+    await client.delete(`/tariffs/${id}`)
+}
